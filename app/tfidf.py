@@ -1,14 +1,21 @@
 import pandas as pd
 import pickle
 from sklearn.feature_extraction.text import TfidfVectorizer
+from os.path import dirname
 
-spotify_songs = pd.read_csv("data/spotify_songs.csv.zip")
+DIR = dirname(__file__)
+
+spotify_songs = pd.read_csv(DIR+"/../data/spotify_songs.csv.zip")
 
 spotify_songs = spotify_songs[spotify_songs['language']=='en']
 
 df1 = spotify_songs.sort_values('track_popularity', ascending=False)[0:5000]
-df1 = df1.reset_index()
+df1 = df1.reindex()
 
+to_lowercase = lambda x: x.lower()
+
+df1.track_artist = df1.track_artist.apply(to_lowercase)
+df1.track_name = df1.track_name.apply(to_lowercase)
 
 def gather_data(songs):
   data =[]

@@ -6,14 +6,16 @@ import pandas as pd
 from pydantic import BaseModel, Field, validator
 import pickle
 import joblib
-from tfidf import dtm
-from tfidf import df1
-from tfidf import spotify_songs
-from app.data_model.find_songs import FindSongs
+from .tfidf import dtm
+from .tfidf import df1
+from .tfidf import spotify_songs
 from sklearn.feature_extraction.text import TfidfVectorizer
 from tqdm.notebook import tqdm
 from pandas import Series
-from app.data_model.find_songs import FindSongs
+from .data_model.find_songs import FindSongs
+from os.path import dirname
+
+DIR = dirname(__file__)
 
 log = logging.getLogger(__name__)
 router = APIRouter()
@@ -74,23 +76,31 @@ async def predict(artist, song):
 
 
     # loaded_model = pickle.load(open('nlp_model.sav', 'rb'))
-    loaded_model = joblib.load('app/loaded_model.joblib')
+    loaded_model = joblib.load(DIR+'/loaded_model.joblib')
 
     # translate artist, song into doc dtm.iloc[x].values
-    artist_songs = df1.loc[df1['track_artist'] == artist]
-    selected_song = artist_songs.loc[artist_songs['track_name'] == song]
+    artist_songs = df1[df1['track_artist'] == artist.lower()]
+    selected_song = artist_songs.loc[artist_songs['track_name'] == song.lower()]
+    print(f'selected_song = {selected_song}')
     x = selected_song.index
-    x = x.item()
-    # x = x.tolist()
-    doc = dtm.loc[x].values
-    result = loaded_model.kneighbors([doc])
+    print(f'x = {x}')
+    #x = x.item()
+    x = x.tolist()
+    print(f'x = {x}')
+    artist1 = 'Unknown'
+    song1 = 'Unknown'
+    
+    if len(x):
+        doc = dtm.loc[x[0]].values
+        result = loaded_model.kneighbors([doc])
 
-    song1 = result[1][0][1]  # gives the loc
-
-    # translate the loc into an artist and song title
-    artist1 = spotify_songs.loc[song1]['track_artist']
-    song1 = spotify_songs.loc[song1]['track_name']
-
-    # translate result into song names
+        print(f'result = {result}')
+        song1 = result[1][0][1]  # gives the loc
+        
+        # translate the loc into an artist and song title
+        artist1 = spotify_songs.loc[song1]['track_artist']
+        song1 = spotify_songs.loc[song1]['track_name']
+        
+        # translate result into song names
     return artist1, song1
     #}
